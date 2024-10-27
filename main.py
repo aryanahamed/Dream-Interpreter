@@ -24,7 +24,10 @@ if st.button("💫 Interpret Dream 💫"):
     messages=[
         {
             "role": "system",
-            "content": '''You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will interpret in as much as detail as possible. After that you will return a json format where the following Titles will be the keys and content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Do not put values in a list structure. If there are multiple values just write them side by side with comma. Make sure the json format is correct and ogranised. Do not write anything outside of JSON. Make sure to use emojis after every values.
+            "content": ''' You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will
+            interpret in as much as detail as possible. After that you will return a json format where the following Titles will be the keys and
+            content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and ogranised.
+            Do not write anything outside of JSON. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash. 
             {
                     "Dream Type": "Surreal 🤯",
                     "Emotion Intensity": "8/10 😨",
@@ -36,7 +39,14 @@ if st.button("💫 Interpret Dream 💫"):
                     "Settings": "Unfamiliar Building, Urban Cityscape 🏙️",
                     "Potential Physical Reactions": "Woke up with a sudden jerk, Fast heartbeat 💥",
                     "Potential Lucidity Level": "Non-Lucid 😴",
-                    "Detailed Interpretation": "It seems like you are experiencing a sense of losing control or feeling overwhelmed in your waking life..."
+                    "Shadow Aspect": "Fear of Vulnerability 👤",
+                    "Secret Message to Self": "Trust Your Instincts 🌌",
+                    "Advice": "(Add a funny quote very much related to the dream that is also an advice. Make it Rude and Motivational with curse words like Listen Motherfucker or What the fuck.)",
+                    "Roast": "(Roast the user depending on the context of the dream. Make it creative and witty.)",
+                    "Detailed Interpretation": (Write this in markdown and format in a interesting way emphasizing important words/sentences.
+                                                Escape any newline characters with a backslash. Do not use headings in this section and do not put any advice here.)", 
+                                                "It seems like you are experiencing a sense of losing control or feeling overwhelmed in your waking life..."
+                    
             }''',
         },
         {
@@ -47,7 +57,7 @@ if st.button("💫 Interpret Dream 💫"):
     
     
     model="llama3-70b-8192",
-    temperature=1,
+    temperature=0.8,
     # Requests can use up to
     # 32,768 tokens shared between prompt and completion.
     max_tokens=2048,
@@ -57,8 +67,10 @@ if st.button("💫 Interpret Dream 💫"):
     )
     
     dream_json = chat_completion.choices[0].message.content
-    
+    # st.write(dream_json)
+    # print(dream_json)
     parsed_data = parse_json(dream_json)
+    # print(parsed_data)
     
     
     if parsed_data:
@@ -95,7 +107,7 @@ if st.button("💫 Interpret Dream 💫"):
             except StopIteration:
                 break
     else:
-        st.write("Oops! The AI is tired and outputting gibberish. Please try again.")
+        st.write("Oops! The AI is tired and outputting gibberish. Please press the button again.")
     
     
 footer="""<style>
