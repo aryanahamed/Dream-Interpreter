@@ -1,5 +1,5 @@
-
-![Dream Interpreter](webimage.png)
+# Dream Interpreter 🌙
+![Dream Interpreter](dream.gif)
 
 ## Description
 Dream Interpreter interprets your dreams and showcase them in a fun informative way.
