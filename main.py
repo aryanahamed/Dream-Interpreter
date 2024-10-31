@@ -1,25 +1,107 @@
 import os
+from dotenv import load_dotenv
 from groq import Groq
 import streamlit as st
 import json
+import yaml
+import streamlit_authenticator as stauth
+
+load_dotenv()
 
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
 
+
+# Load config
+with open('users.yaml') as file:
+    config = yaml.load(file, Loader=yaml.SafeLoader)
+
+# Hash the passwords
+hashed_passwords = stauth.Hasher.hash_passwords(config['credentials'])
+
+# Create authenticator without preauthorized parameter
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
+
+# Login widget
+try:
+    authenticator.login(location='sidebar')
+except Exception as e:
+    st.error(e)
+
+if st.session_state['authentication_status']:
+    authenticator.logout()
+    st.write(f'Welcome *{st.session_state["name"]}*')
+elif st.session_state['authentication_status'] is False:
+    st.error('Username/password is incorrect')
+elif st.session_state['authentication_status'] is None:
+    st.warning('Register to save your entries')
+
+# Sign-up widget
+try:
+    email_of_registered_user, \
+    username_of_registered_user, \
+    name_of_registered_user = authenticator.register_user(location='sidebar')
+    if email_of_registered_user:
+        st.success('User registered successfully')
+except Exception as e:
+    st.error(e)
+
 def parse_json(json_string):
     try:
-        # Attempt to load the string as JSON
         return json.loads(json_string)
     except json.JSONDecodeError:
-        # If JSON decoding fails, display an error message
         st.error("The JSON string is not formatted correctly.")
         return None
+    
+def load_user_dreams(user):
+    with open("dreams.json", "r") as file:
+        data = json.load(file)
+    return data.get(user, [])
+
+def save_user_dream(user, dream_data):
+    try:
+        with open("dreams.json", "r+") as file:
+            try:
+                data = json.load(file)
+            except json.JSONDecodeError:
+                data = {}
+            if user not in data:
+                data[user] = []
+            data[user].append(dream_data)
+            file.seek(0)
+            json.dump(data, file)
+            file.truncate()
+    except Exception as e:
+        st.error(f"Error saving dream: {e}")
+        
 
 st.title("Dream Interpreter🌙", anchor=False)
+
+if st.button("Load your dreams"):
+    user = st.session_state.get("username", "default_user")
+    dreams = load_user_dreams(user)
+    for dream in dreams:
+        st.markdown(dream)
+
+
 dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better.", height=200, max_chars=2000)
 
-if st.button("💫 Interpret Dream 💫"):
+
+if 'click' not in st.session_state:
+    st.session_state.click = {1: False, 2: False}
+
+def clicked(button):
+    st.session_state.click[button] = True
+
+st.button("💫 Interpret Dream 💫", on_click=clicked, args=[1])
+
+if st.session_state.click.get(1, False):
     chat_completion = client.chat.completions.create(
     messages=[
         {
@@ -29,23 +111,19 @@ if st.button("💫 Interpret Dream 💫"):
             content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and ogranised.
             Do not write anything outside of JSON. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash. 
             {
-                    "Dream Type": "Surreal 🤯",
-                    "Emotion Intensity": "8/10 😨",
-                    "Dominant Emotion": "Fear 😨",
-                    "Vividness": "9/10 🔥",
-                    "Reality Connection": "Current Life Concerns 💔",
-                    "Symbols or Themes": "Falling, Loss of Control, Fear of Failure 🏗️",
-                    "Characters Involved": "Only myself 👥",
-                    "Settings": "Unfamiliar Building, Urban Cityscape 🏙️",
-                    "Potential Physical Reactions": "Woke up with a sudden jerk, Fast heartbeat 💥",
-                    "Potential Lucidity Level": "Non-Lucid 😴",
-                    "Shadow Aspect": "Fear of Vulnerability 👤",
-                    "Secret Message to Self": "Trust Your Instincts 🌌",
-                    "Advice": "(Add a funny quote very much related to the dream that is also an advice. Make it Rude and Motivational with curse words like Listen Motherfucker or What the fuck.)",
-                    "Roast": "(Roast the user depending on the context of the dream. Make it creative and witty.)",
-                    "Detailed Interpretation": (Write this in markdown and format in a interesting way emphasizing important words/sentences.
-                                                Escape any newline characters with a backslash. Do not use headings in this section and do not put any advice here.)", 
-                                                "It seems like you are experiencing a sense of losing control or feeling overwhelmed in your waking life..."
+                    "Dream Type": "...",
+                    "Emotion Intensity": "...",
+                    "Dominant Emotion": "...",
+                    "Vividness": "...",
+                    "Reality Connection": "...",
+                    "Symbols or Themes": "...",
+                    "Characters Involved": "...",
+                    "Settings": "...",
+                    "Potential Physical Reactions": "...",
+                    "Potential Lucidity Level": "...",
+                    "Shadow Aspect": "...",
+                    "Secret Message to Self": "...",
+                    "Detailed Interpretation": "..."
                     
             }''',
         },
@@ -58,8 +136,6 @@ if st.button("💫 Interpret Dream 💫"):
     
     model="llama3-70b-8192",
     temperature=0.8,
-    # Requests can use up to
-    # 32,768 tokens shared between prompt and completion.
     max_tokens=2048,
     top_p=1,
     stop=None,
@@ -67,10 +143,7 @@ if st.button("💫 Interpret Dream 💫"):
     )
     
     dream_json = chat_completion.choices[0].message.content
-    # st.write(dream_json)
-    # print(dream_json)
     parsed_data = parse_json(dream_json)
-    # print(parsed_data)
     
     
     if parsed_data:
@@ -106,10 +179,18 @@ if st.button("💫 Interpret Dream 💫"):
 
             except StopIteration:
                 break
-    else:
-        st.write("Oops! The AI is tired and outputting gibberish. Please press the button again.")
+    
+    st.button("💾 Save your dream 💾", on_click=clicked, args=[2])
+    if st.session_state.click[2]:
+        user = st.session_state.get("username", "default_user")
+        save_user_dream(user, parsed_data)
+        st.success("Dream saved successfully!")
+
     
     
+    
+    
+# Footer
 footer="""<style>
 .footer {
     position: fixed;
