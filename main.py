@@ -2,6 +2,9 @@ import os
 from groq import Groq
 import streamlit as st
 import json
+from dotenv import load_dotenv
+
+load_dotenv()
 
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
@@ -9,17 +12,15 @@ client = Groq(
 
 def parse_json(json_string):
     try:
-        # Attempt to load the string as JSON
         return json.loads(json_string)
     except json.JSONDecodeError:
-        # If JSON decoding fails, display an error message
         st.error("The JSON string is not formatted correctly.")
         return None
 
 st.title("Dream Interpreter🌙", anchor=False)
 dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better.", height=200, max_chars=2000)
 
-if st.button("💫 Interpret Dream 💫"):
+if st.button("💫 Interpret Dream 💫") and dream:
     chat_completion = client.chat.completions.create(
     messages=[
         {
@@ -29,23 +30,19 @@ if st.button("💫 Interpret Dream 💫"):
             content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and ogranised.
             Do not write anything outside of JSON. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash. 
             {
-                    "Dream Type": "Surreal 🤯",
-                    "Emotion Intensity": "8/10 😨",
-                    "Dominant Emotion": "Fear 😨",
-                    "Vividness": "9/10 🔥",
-                    "Reality Connection": "Current Life Concerns 💔",
-                    "Symbols or Themes": "Falling, Loss of Control, Fear of Failure 🏗️",
-                    "Characters Involved": "Only myself 👥",
-                    "Settings": "Unfamiliar Building, Urban Cityscape 🏙️",
-                    "Potential Physical Reactions": "Woke up with a sudden jerk, Fast heartbeat 💥",
-                    "Potential Lucidity Level": "Non-Lucid 😴",
-                    "Shadow Aspect": "Fear of Vulnerability 👤",
-                    "Secret Message to Self": "Trust Your Instincts 🌌",
-                    "Advice": "(Add a funny quote very much related to the dream that is also an advice. Make it Rude and Motivational with curse words like Listen Motherfucker or What the fuck.)",
-                    "Roast": "(Roast the user depending on the context of the dream. Make it creative and witty.)",
-                    "Detailed Interpretation": (Write this in markdown and format in a interesting way emphasizing important words/sentences.
-                                                Escape any newline characters with a backslash. Do not use headings in this section and do not put any advice here.)", 
-                                                "It seems like you are experiencing a sense of losing control or feeling overwhelmed in your waking life..."
+                    "Dream Type": "...",
+                    "Emotion Intensity": "...",
+                    "Dominant Emotion": "...",
+                    "Vividness": "...",
+                    "Reality Connection": "...",
+                    "Symbols or Themes": "...",
+                    "Characters Involved": "...",
+                    "Settings": "...",
+                    "Potential Physical Reactions": "...",
+                    "Potential Lucidity Level": "...",
+                    "Shadow Aspect": "...",
+                    "Secret Message to Self": "...",
+                    "Detailed Interpretation": "..."
                     
             }''',
         },
@@ -58,8 +55,6 @@ if st.button("💫 Interpret Dream 💫"):
     
     model="llama3-70b-8192",
     temperature=0.8,
-    # Requests can use up to
-    # 32,768 tokens shared between prompt and completion.
     max_tokens=2048,
     top_p=1,
     stop=None,
@@ -67,10 +62,7 @@ if st.button("💫 Interpret Dream 💫"):
     )
     
     dream_json = chat_completion.choices[0].message.content
-    # st.write(dream_json)
-    # print(dream_json)
     parsed_data = parse_json(dream_json)
-    # print(parsed_data)
     
     
     if parsed_data:
@@ -107,7 +99,7 @@ if st.button("💫 Interpret Dream 💫"):
             except StopIteration:
                 break
     else:
-        st.write("Oops! The AI is tired and outputting gibberish. Please press the button again.")
+        st.write("Oops! The AI is outputting gibberish. Please press the button again.")
     
     
 footer="""<style>
