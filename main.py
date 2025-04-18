@@ -1,14 +1,14 @@
+from datetime import datetime
 import os
-from groq import Groq
 import streamlit as st
 import json
 from dotenv import load_dotenv
+import google.generativeai as genai
+from google.generativeai import types
 
 load_dotenv()
 
-client = Groq(
-    api_key=os.environ.get("GROQ_API_KEY"),
-)
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 def parse_json(json_string):
     try:
@@ -21,50 +21,61 @@ st.title("Dream Interpreter🌙", anchor=False)
 dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better.", height=200, max_chars=2000)
 
 if st.button("💫 Interpret Dream 💫") and dream:
-    chat_completion = client.chat.completions.create(
-    messages=[
-        {
-            "role": "system",
-            "content": ''' You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will
-            interpret in as much as detail as possible. After that you will return a json format where the following Titles will be the keys and
-            content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and ogranised.
-            Do not write anything outside of JSON. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash. 
-            {
-                    "Dream Type": "...",
-                    "Emotion Intensity": "...",
-                    "Dominant Emotion": "...",
-                    "Vividness": "...",
-                    "Reality Connection": "...",
-                    "Symbols or Themes": "...",
-                    "Characters Involved": "...",
-                    "Settings": "...",
-                    "Potential Physical Reactions": "...",
-                    "Potential Lucidity Level": "...",
-                    "Shadow Aspect": "...",
-                    "Secret Message to Self": "...",
-                    "Detailed Interpretation": "..."
-                    
-            }''',
-        },
-        {
-            "role": "user",
-            "content": dream,
-        }
-    ],
-    
-    
-    model="llama3-70b-8192",
-    temperature=0.8,
-    max_tokens=2048,
-    top_p=1,
-    stop=None,
-    stream=False,
-    )
-    
-    dream_json = chat_completion.choices[0].message.content
-    parsed_data = parse_json(dream_json)
-    
-    
+    model = genai.GenerativeModel('gemini-2.0-flash')
+
+    system_prompt = '''You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will interpret in as much detail as possible. After that you will return ONLY a json format where the following Titles will be the keys and content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and organised. Do not write anything outside of the JSON object itself. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash.
+{
+        "Dream Type": "...",
+        "Emotion Intensity": "...",
+        "Dominant Emotion": "...",
+        "Vividness": "...",
+        "Reality Connection": "...",
+        "Symbols or Themes": "...",
+        "Characters Involved": "...",
+        "Settings": "...",
+        "Potential Physical Reactions": "...",
+        "Potential Lucidity Level": "...",
+        "Shadow Aspect": "...",
+        "Secret Message to Self": "...",
+        "Detailed Interpretation": "..."
+
+}'''
+    user_content = dream
+
+    prompt_parts = [
+        system_prompt,
+        "\nUser Dream:\n",
+        user_content
+    ]
+
+    try:
+        response = model.generate_content(
+            prompt_parts,
+            generation_config=types.GenerationConfig(
+                temperature=0.7,
+                max_output_tokens=2048,
+                top_p=0.95,
+            )
+        )
+        dream_json = response.text
+
+    except Exception as e:
+        st.error(f"An error occurred while contacting the Gemini API: {e}")
+        dream_json = None
+        parsed_data = None
+    print(dream_json)
+    if dream_json:
+        if dream_json.startswith("```json"):
+            dream_json = dream_json[len("```json"):].strip()
+        if dream_json.startswith("```"):
+             dream_json = dream_json[len("```"):].strip()
+        if dream_json.endswith("```"):
+            dream_json = dream_json[:-len("```")].strip()
+
+        parsed_data = parse_json(dream_json)
+    else:
+        parsed_data = None
+
     if parsed_data:
         st.title("🌟 Interpretation 🌟", anchor=False)
 
@@ -99,9 +110,9 @@ if st.button("💫 Interpret Dream 💫") and dream:
             except StopIteration:
                 break
     else:
-        st.write("Oops! The AI is outputting gibberish. Please press the button again.")
-    
-    
+        if dream_json is not None:
+            st.write("Oops! The AI response wasn't valid JSON. Please try again.")
+
 footer="""<style>
 .footer {
     position: fixed;
@@ -111,23 +122,11 @@ footer="""<style>
     background-color: black;
     color: white;
     text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
     padding: 10px;
 }
-
-.footer p {
-    margin: 0;
-}
+.footer p { margin: 0; }
 </style>
-
-<div class="footer">
-    <p>Made with ❤ by Aryan</p>
-    <img src='https://groq.com/wp-content/uploads/2024/03/PBG-mark1-color.svg' alt='Powered by Groq for fast inference.' width='50' height='50'/>
-</div>
+<div class="footer"> <p>Made with ❤ by Aryan</p> </div>
 """
-st.markdown(footer,unsafe_allow_html=True)
+st.markdown(footer, unsafe_allow_html=True)
 
-            
