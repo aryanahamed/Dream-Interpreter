@@ -4,7 +4,7 @@ from firebase_config import sign_in_user, send_password_reset
 if st.session_state.get("user") != None:
     st.warning("You are already logged in. Please log out to switch accounts.")
     if st.button("Go to Home"):
-        st.switch_page("Home.py")
+        st.switch_page("main.py")
     st.stop()
 
 st.title("Login")
@@ -21,7 +21,7 @@ if st.button("Login"):
             st.session_state.user_token = user['idToken']
             st.session_state.user_email = user['email']
             st.success("Logged in successfully!")
-            st.switch_page("Home.py")
+            st.switch_page("main.py")
         elif "INVALID_LOGIN_CREDENTIALS" in error:
             st.error("Invalid email or password. Please try again.")
         else:

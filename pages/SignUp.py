@@ -4,7 +4,7 @@ from firebase_config import sign_up_user
 if st.session_state.get("user") != None:
     st.warning("You are already logged in. Please log out to sign up a new account.")
     if st.button("Go to Home"):
-        st.switch_page("Home.py")
+        st.switch_page("main.py")
     st.stop()
 
 st.title("Sign Up")
@@ -21,7 +21,7 @@ if st.button("Sign Up"):
             st.session_state.user_token = user['idToken']
             st.session_state.user_email = user['email']
             st.success("Account created and logged in!")
-            st.switch_page("Home.py")
+            st.switch_page("main.py")
         else:
             st.error(f"Sign up failed: {error}")
     else:

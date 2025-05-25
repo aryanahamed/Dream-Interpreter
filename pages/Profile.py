@@ -10,7 +10,7 @@ if user_email:
     if st.button("Logout"):
         sign_out_user()
         st.success("Logged out successfully!")
-        st.switch_page("Home.py")
+        st.switch_page("main.py")
 else:
     st.warning("You are not logged in.")
     if st.button("Go to Login"):
