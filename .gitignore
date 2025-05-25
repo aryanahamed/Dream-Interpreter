@@ -5,3 +5,5 @@ prompt.txt
 .genaiscript/.gitattributes
 dreams.json
 users.yaml
+/__pycache__
+dream-interpreter-8e0e8-firebase-adminsdk-fbsvc-43e2fb7826.json

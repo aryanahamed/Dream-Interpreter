@@ -5,6 +5,8 @@ import json
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai import types
+from firebase_admin import firestore
+from firebase_config import sign_out_user, db
 
 load_dotenv()
 
@@ -16,15 +18,43 @@ def parse_json(json_string):
     except json.JSONDecodeError:
         st.error("The JSON string is not formatted correctly.")
         return None
+    
+def save_dream_to_firestore(user_email, dream_text, interpretation):
+    doc_ref = db.collection("dreams").document()
+    doc_ref.set({
+        "user_email": user_email,
+        "created_at": firestore.SERVER_TIMESTAMP,
+        "dream": dream_text,
+        "interpretation": interpretation
+    })
 
 st.title("Dream Interpreter🌙", anchor=False)
-dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better.", height=200, max_chars=2000)
+
+if "user" not in st.session_state:
+    st.session_state.user = None
+
+if st.session_state.user is None:
+    if st.button("Login to save your dream interpretations"):
+        st.switch_page("pages/Login.py")
+else:
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.success(f"Logged in as {st.session_state.user}")
+    with col2:
+        if st.button("Logout"):
+            sign_out_user()
+            st.switch_page("Home.py")
+
+dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better. Do not put any personal information", height=200)
 
 if st.button("💫 Interpret Dream 💫") and dream:
     model = genai.GenerativeModel('gemini-2.0-flash')
 
     system_prompt = '''You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will interpret in as much detail as possible. After that you will return ONLY a json format where the following Titles will be the keys and content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and organised. Do not write anything outside of the JSON object itself. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash.
+    Additionally, generate a Two-word title and a relevant emoji that best summarizes the dream. This title should be a two-word phrase and will be used as the dream's title.
 {
+        "Title": "...",  # Two words only (no emoji with title)
+        "Emoji": "🌙",  # Relevant emoji for the dream
         "Dream Type": "...",
         "Emotion Intensity": "...",
         "Dominant Emotion": "...",
@@ -63,7 +93,7 @@ if st.button("💫 Interpret Dream 💫") and dream:
         st.error(f"An error occurred while contacting the Gemini API: {e}")
         dream_json = None
         parsed_data = None
-    print(dream_json)
+    
     if dream_json:
         if dream_json.startswith("```json"):
             dream_json = dream_json[len("```json"):].strip()
@@ -77,8 +107,16 @@ if st.button("💫 Interpret Dream 💫") and dream:
         parsed_data = None
 
     if parsed_data:
-        st.title("🌟 Interpretation 🌟", anchor=False)
+        if st.session_state.user:
+            save_dream_to_firestore(st.session_state.user, dream, parsed_data.copy())
 
+        dream_title = parsed_data.get("Title", "Dream")
+        dream_emoji = parsed_data.get("Emoji", "🌙")
+        st.header(f"{dream_emoji} {dream_title} {dream_emoji}")
+        
+        parsed_data.pop("Title", None)
+        parsed_data.pop("Emoji", None)
+        
         iterator = iter(parsed_data.items())
 
         while True:
@@ -129,4 +167,3 @@ footer="""<style>
 <div class="footer"> <p>Made with ❤ by Aryan</p> </div>
 """
 st.markdown(footer, unsafe_allow_html=True)
-

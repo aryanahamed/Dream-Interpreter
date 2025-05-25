@@ -1,3 +1,5 @@
 streamlit
 python-dotenv
 google-generativeai
+firebase-admin
+pyrebase
