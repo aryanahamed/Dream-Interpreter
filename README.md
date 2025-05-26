@@ -12,7 +12,6 @@ Dream Interpreter interprets your dreams and showcase them in a fun informative 
 [Dream Interpreter](https://dream-interpreter.streamlit.app/)
 
 ## TODO
-- Edit/Delete Dreams from History Tab
 - Insights in Profile Tab
 
 ## Disclaimer

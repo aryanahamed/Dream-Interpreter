@@ -6,4 +6,3 @@ oauth2client
 pycryptodome
 firebase-admin
 pyrebase
-pyrebase4

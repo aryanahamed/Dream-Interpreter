@@ -17,12 +17,15 @@ firebaseConfig = {
     "databaseURL": os.environ.get("FIREBASE_DATABASE_URL")
 }
 
+db = None
+firebase_auth = None
+
 try:
     firebase = pyrebase.initialize_app(firebaseConfig)
     firebase_auth = firebase.auth()
 except Exception as e:
     st.error(f"Firebase initialization error: {e}")
-    st.stop()
+    pass
 
 if not firebase_admin._apps:
     try:
@@ -46,7 +49,7 @@ if not firebase_admin._apps:
             
             if not all([service_account_info["project_id"], service_account_info["private_key"], service_account_info["client_email"]]):
                 st.error("Missing required Firebase service account credentials")
-                st.stop()
+                pass
             
             cred = credentials.Certificate(service_account_info)
         
@@ -55,6 +58,7 @@ if not firebase_admin._apps:
         
     except Exception as e:
         st.error(f"Firebase Admin initialization error: {e}")
+        db = None
         pass
 
 def sign_up_user(email, password):

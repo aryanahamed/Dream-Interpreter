@@ -30,14 +30,14 @@ if st.button("Login"):
         st.error("Please enter email and password.")
         
 if st.button("Forgot Password?"):
-    try:
-        send_password_reset(email)
-        st.success("If an account exists for this email, a password reset link has been sent. Please check your inbox (and spam folder).")
-    except Exception as e:
-        st.error(f"Failed to process password reset request. Please ensure the email is valid and try again later.")
-    else:
+    if not email:
         st.warning("Please enter your email above to reset your password.")
+    else:
+        try:
+            send_password_reset(email)
+            st.success("If an account exists for this email, a password reset link has been sent. Please check your inbox (and spam folder).")
+        except Exception as e:
+            st.error(f"Failed to process password reset request. Please ensure the email is valid and try again later.")
 
 if st.button("Sign Up"):
-    st.switch_page("pages//SignUp.py")
-    
+    st.switch_page("pages/SignUp.py")

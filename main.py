@@ -12,6 +12,20 @@ load_dotenv()
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
+
+st.markdown("""
+<style>
+.header-anchor,
+[id^="user-content-"] a,
+.st-emotion-cache-oczh79 a,
+.st-af a,
+.stMarkdown a {
+    display: none !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+
 def parse_json(json_string):
     try:
         return json.loads(json_string)
@@ -20,6 +34,9 @@ def parse_json(json_string):
         return None
     
 def save_dream_to_firestore(user_email, dream_text, interpretation):
+    if db is None:
+        st.error("Database connection failed. Please check your Firebase configuration and restart the app.")
+        return
     doc_ref = db.collection("dreams").document()
     doc_ref.set({
         "user_email": user_email,
@@ -39,7 +56,7 @@ if st.session_state.user is None:
 else:
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.success(f"Logged in as {st.session_state.user}")
+        st.success(f"Interpretations will be automatically saved!")
     with col2:
         if st.button("Logout"):
             sign_out_user()
@@ -106,13 +123,29 @@ if st.button("💫 Interpret Dream 💫") and dream:
     else:
         parsed_data = None
 
+    tooltip_dict = {
+                "Dream Type": "The general category or theme of your dream (e.g., lucid, nightmare, recurring).",
+                "Emotion Intensity": "How strong the emotions felt during the dream were.",
+                "Dominant Emotion": "The main emotion you experienced in the dream.",
+                "Vividness": "How clear and detailed the dream felt.",
+                "Reality Connection": "How much the dream relates to your real life or current events.",
+                "Symbols or Themes": "Key symbols, motifs, or themes that appeared in your dream.",
+                "Characters Involved": "People, animals, or entities present in your dream.",
+                "Settings": "The locations or environments where the dream took place.",
+                "Potential Physical Reactions": "Physical sensations or reactions you noticed during or after the dream.",
+                "Potential Lucidity Level": "How aware you were that you were dreaming.",
+                "Shadow Aspect": "Hidden or unconscious aspects of yourself reflected in the dream.",
+                "Secret Message to Self": "A possible message your subconscious is trying to send you.",
+                "Detailed Interpretation": "A comprehensive analysis of your dream's meaning."
+    }
+
     if parsed_data:
         if st.session_state.user:
             save_dream_to_firestore(st.session_state.user, dream, parsed_data.copy())
 
         dream_title = parsed_data.get("Title", "Dream")
         dream_emoji = parsed_data.get("Emoji", "🌙")
-        st.header(f"{dream_emoji} {dream_title} {dream_emoji}")
+        st.header(f"{dream_emoji} {dream_title} {dream_emoji}", anchor=False)
         
         parsed_data.pop("Title", None)
         parsed_data.pop("Emoji", None)
@@ -131,18 +164,18 @@ if st.button("💫 Interpret Dream 💫") and dream:
                 if key2 is None:
                     wide_col = st.columns(1)[0]
                     with wide_col:
-                        st.subheader(key1, anchor=False)
+                        st.markdown(f"### {key1}", help=tooltip_dict.get(key1))
                         st.write(value1)
                     break
                 else:
                     col1, col2 = st.columns(2)
 
                     with col1:
-                        st.subheader(key1, anchor=False)
+                        st.markdown(f"### {key1}", help=tooltip_dict.get(key1))
                         st.write(value1)
 
                     with col2:
-                        st.subheader(key2, anchor=False)
+                        st.markdown(f"### {key2}", help=tooltip_dict.get(key2))
                         st.write(value2)
 
             except StopIteration:

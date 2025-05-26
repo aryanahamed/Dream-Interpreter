@@ -13,7 +13,13 @@ signup_email = st.text_input("Email")
 signup_password = st.text_input("Password", type="password")
 
 if st.button("Sign Up"):
-    if signup_email and signup_password:
+    if not signup_email or not signup_password:
+        st.error("Please enter email and password")
+    elif "@" not in signup_email or "." not in signup_email:
+        st.error("Please enter a valid email address")
+    elif len(signup_password) < 6:
+        st.error("Password must be at least 6 characters long")
+    else:
         with st.spinner("Signing up..."):
             user, error = sign_up_user(signup_email, signup_password)
         if user:
@@ -24,8 +30,6 @@ if st.button("Sign Up"):
             st.switch_page("main.py")
         else:
             st.error(f"Sign up failed: {error}")
-    else:
-        st.error("Please enter email and password")
 
 if st.button("Go to Login"):
-    st.switch_page("pages//Login.py")
+    st.switch_page("pages/Login.py")
