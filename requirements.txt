@@ -2,7 +2,7 @@ streamlit
 python-dotenv
 google-generativeai
 google-api-python-client
-oauth2client
+google-auth
 pycryptodome
 firebase-admin
 pyrebase
