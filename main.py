@@ -60,7 +60,7 @@ else:
     with col2:
         if st.button("Logout"):
             sign_out_user()
-            st.switch_page("Home.py")
+            st.switch_page("main.py")
 
 dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better. Do not put any personal information", height=200)
 

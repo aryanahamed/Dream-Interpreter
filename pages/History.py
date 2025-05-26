@@ -66,7 +66,7 @@ if user_email:
                 if delete_button:
                     db.collection("dreams").document(dream["id"]).delete()
                     st.success("Dream deleted.")
-                    st.experimental_rerun()
+                    st.rerun()
     else:
         st.info("No dream history found")
 else:

@@ -1,8 +1,9 @@
-streamlit
+streamlit==1.45.1
 python-dotenv
 google-generativeai
 google-api-python-client
 google-auth
-pycryptodome
+pycryptodome>=3.4.3
 firebase-admin
-pyrebase
+python-jwt>=4.0.0
+requests>=2.32.0
