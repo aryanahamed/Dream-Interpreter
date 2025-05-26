@@ -2,15 +2,54 @@ from datetime import datetime
 import os
 import streamlit as st
 import json
+import requests
 from dotenv import load_dotenv
-import google.generativeai as genai
-from google.generativeai import types
 from firebase_admin import firestore
 from firebase_config import sign_out_user, db
 
 load_dotenv()
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+def call_gemini_api(prompt, api_key):
+    """
+    Make a direct REST API call to Google's Generative AI API
+    """
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    
+    headers = {
+        "Content-Type": "application/json"
+    }
+    
+    data = {
+        "contents": [
+            {
+                "parts": [
+                    {"text": prompt}
+                ]
+            }
+        ],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 2048,
+            "topP": 0.95
+        }
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=30)
+        response.raise_for_status()
+        
+        result = response.json()
+        if "candidates" in result and len(result["candidates"]) > 0:
+            return result["candidates"][0]["content"]["parts"][0]["text"]
+        else:
+            raise Exception("No valid response from API")
+            
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"API request failed: {str(e)}")
+    except KeyError as e:
+        raise Exception(f"Unexpected API response format: {str(e)}")
+    except Exception as e:
+        raise Exception(f"Error calling Gemini API: {str(e)}")
 
 
 st.markdown("""
@@ -65,8 +104,6 @@ else:
 dream = st.text_area("Enter your dream below and I will interpret it for you. The more detailed the better. Do not put any personal information", height=200)
 
 if st.button("💫 Interpret Dream 💫") and dream:
-    model = genai.GenerativeModel('gemini-2.0-flash')
-
     system_prompt = '''You are a Dream Interpreter who is an expert at interpreting dreams. You will be given a dream as an input and you will interpret in as much detail as possible. After that you will return ONLY a json format where the following Titles will be the keys and content as the values depending on the dream. Also use an appropriate emoji at the end of each title. Make sure the json format is correct and organised. Do not write anything outside of the JSON object itself. Make sure to use emojis after every values. Escape the inner quotes of quotes with a backslash.
     Additionally, generate a Two-word title and a relevant emoji that best summarizes the dream. This title should be a two-word phrase and will be used as the dream's title.
 {
@@ -87,24 +124,17 @@ if st.button("💫 Interpret Dream 💫") and dream:
         "Detailed Interpretation": "..."
 
 }'''
-    user_content = dream
 
-    prompt_parts = [
-        system_prompt,
-        "\nUser Dream:\n",
-        user_content
-    ]
+    # Combine system prompt and user dream
+    full_prompt = system_prompt + "\nUser Dream:\n" + dream
 
     try:
-        response = model.generate_content(
-            prompt_parts,
-            generation_config=types.GenerationConfig(
-                temperature=0.7,
-                max_output_tokens=2048,
-                top_p=0.95,
-            )
-        )
-        dream_json = response.text
+        # Use our custom REST API function instead of the SDK
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            raise Exception("GEMINI_API_KEY not found in environment variables")
+            
+        dream_json = call_gemini_api(full_prompt, api_key)
 
     except Exception as e:
         st.error(f"An error occurred while contacting the Gemini API: {e}")
